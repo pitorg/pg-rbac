@@ -1,0 +1,108 @@
+digraph DatabaseSchema {
+    rankdir=LR;
+    compound=true;
+    node [shape=box, style=filled, fillcolor=lightblue, fontsize=10];
+    edge [color=darkgreen, arrowhead=vee, fontsize=8];
+    
+    // Table clusters with column nodes
+
+    subgraph cluster_rbac_assigned_permissions {
+        label="rbac.assigned_permissions";
+        style=filled;
+        color=lightgrey;
+        fontsize=12;
+        
+        "rbac.assigned_permissions.operation_id" [label="operation_id ⚷\nuuid", fillcolor=gold];
+        "rbac.assigned_permissions.object_id" [label="object_id ⚷\nuuid", fillcolor=gold];
+        "rbac.assigned_permissions.role_id" [label="role_id ⚷\nuuid", fillcolor=gold];
+    }
+
+    subgraph cluster_rbac_assigned_users {
+        label="rbac.assigned_users";
+        style=filled;
+        color=lightgrey;
+        fontsize=12;
+        
+        "rbac.assigned_users.user_id" [label="user_id ⚷\nuuid", fillcolor=gold];
+        "rbac.assigned_users.role_id" [label="role_id ⚷\nuuid", fillcolor=gold];
+    }
+
+    subgraph cluster_rbac_objects {
+        label="rbac.objects";
+        style=filled;
+        color=lightgrey;
+        fontsize=12;
+        
+        "rbac.objects.id" [label="id ⚷\nuuid", fillcolor=gold];
+        "rbac.objects.name" [label="name\ntext"];
+    }
+
+    subgraph cluster_rbac_operations {
+        label="rbac.operations";
+        style=filled;
+        color=lightgrey;
+        fontsize=12;
+        
+        "rbac.operations.id" [label="id ⚷\nuuid", fillcolor=gold];
+        "rbac.operations.name" [label="name\ntext"];
+    }
+
+    subgraph cluster_rbac_roles {
+        label="rbac.roles";
+        style=filled;
+        color=lightgrey;
+        fontsize=12;
+        
+        "rbac.roles.id" [label="id ⚷\nuuid", fillcolor=gold];
+        "rbac.roles.name" [label="name\ntext"];
+    }
+
+    subgraph cluster_rbac_session_roles {
+        label="rbac.session_roles";
+        style=filled;
+        color=lightgrey;
+        fontsize=12;
+        
+        "rbac.session_roles.session_id" [label="session_id ⚷\nuuid", fillcolor=gold];
+        "rbac.session_roles.user_id" [label="user_id\nuuid"];
+        "rbac.session_roles.role_id" [label="role_id ⚷\nuuid", fillcolor=gold];
+    }
+
+    subgraph cluster_rbac_sessions {
+        label="rbac.sessions";
+        style=filled;
+        color=lightgrey;
+        fontsize=12;
+        
+        "rbac.sessions.id" [label="id ⚷\nuuid", fillcolor=gold];
+        "rbac.sessions.user_id" [label="user_id\nuuid"];
+    }
+
+    subgraph cluster_rbac_users {
+        label="rbac.users";
+        style=filled;
+        color=lightgrey;
+        fontsize=12;
+        
+        "rbac.users.id" [label="id ⚷\nuuid", fillcolor=gold];
+    }
+
+    
+    // Foreign Key Relationships
+
+    "rbac.assigned_permissions.object_id" -> "rbac.objects.id" [label="assigned_permissions_object_id_fkey"];
+    "rbac.assigned_permissions.operation_id" -> "rbac.operations.id" [label="assigned_permissions_operation_id_fkey"];
+    "rbac.assigned_permissions.role_id" -> "rbac.roles.id" [label="assigned_permissions_role_id_fkey"];
+    "rbac.assigned_users.role_id" -> "rbac.roles.id" [label="assigned_users_role_id_fkey"];
+    "rbac.assigned_users.user_id" -> "rbac.users.id" [label="assigned_users_user_id_fkey"];
+    "rbac.session_roles.role_id" -> "rbac.roles.id" [label="session_roles_role_id_fkey"];
+    "rbac.session_roles.session_id" -> "rbac.sessions.id" [label="session_roles_session_id_fkey"];
+    // Composite FK: session_roles_session_id_user_id_fkey (session_id,user_id -> id,user_id, color: blue)
+    "rbac.session_roles.session_id" -> "rbac.sessions.id" [color="blue", label="session_roles_session_id_user_id_fkey"];
+    "rbac.session_roles.user_id" -> "rbac.sessions.user_id" [color="blue", label=""];
+    // Composite FK: session_roles_user_id_role_id_fkey (user_id,role_id -> user_id,role_id, color: darkviolet)
+    "rbac.session_roles.user_id" -> "rbac.assigned_users.user_id" [color="darkviolet", label="session_roles_user_id_role_id_fkey"];
+    "rbac.session_roles.role_id" -> "rbac.assigned_users.role_id" [color="darkviolet", label=""];
+    "rbac.sessions.user_id" -> "rbac.users.id" [label="sessions_user_id_fkey"];
+
+}
