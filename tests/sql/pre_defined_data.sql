@@ -1,0 +1,4 @@
+SELECT rbac.add_operation(operation_name => 'execute') IS NOT NULL;
+SELECT rbac.add_object(object_name => 'create_sale') IS NOT NULL;
+SELECT rbac.add_object(object_name => 'give_discount') IS NOT NULL;
+SELECT rbac.add_object(object_name => 'userless') IS NOT NULL;

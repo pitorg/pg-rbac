@@ -1,0 +1,92 @@
+SELECT '63d412c1-6752-42f2-a71b-be7f8dda83da'::UUID AS user_id \gset
+SELECT rbac.create_session
+(
+    :'user_id'::UUID,
+    (SELECT ARRAY_AGG(id) FROM rbac.roles WHERE name IN ('cashier','admin'))
+) AS session_id \gset
+SELECT roles.name
+FROM rbac.session_roles
+JOIN rbac.roles ON roles.id = session_roles.role_id
+WHERE rbac.session_roles.session_id = :'session_id'::UUID
+ORDER BY roles.name;
+  name   
+---------
+ admin
+ cashier
+(2 rows)
+
+SELECT rbac.deassign_user
+(
+    user_id := :'user_id'::UUID,
+    role_id := (SELECT id FROM rbac.roles WHERE name = 'admin')
+);
+ deassign_user 
+---------------
+ t
+(1 row)
+
+SELECT roles.name
+FROM rbac.session_roles
+JOIN rbac.roles ON roles.id = session_roles.role_id
+WHERE rbac.session_roles.session_id = :'session_id'::UUID
+ORDER BY roles.name;
+  name   
+---------
+ cashier
+(1 row)
+
+SELECT rbac.delete_session(:'user_id'::UUID, :'session_id'::UUID);
+ delete_session 
+----------------
+ t
+(1 row)
+
+SELECT COUNT(*) FROM rbac.session_roles WHERE session_id = :'session_id'::UUID;
+ count 
+-------
+     0
+(1 row)
+
+SELECT COUNT(*) FROM rbac.sessions WHERE id = :'session_id'::UUID;
+ count 
+-------
+     0
+(1 row)
+
+SELECT rbac.delete_session(:'user_id'::UUID, :'session_id'::UUID); -- NULL since already deleted
+ delete_session 
+----------------
+ 
+(1 row)
+
+SELECT rbac.create_session
+(
+    :'user_id'::UUID,
+    ARRAY[]::UUID[]
+) AS empty_session_id \gset
+-- OK, active_role_set can be the empty set, probably not that useful though
+SELECT COUNT(*) FROM rbac.sessions WHERE id = :'empty_session_id'::UUID;
+ count 
+-------
+     1
+(1 row)
+
+SELECT COUNT(*) FROM rbac.session_roles WHERE session_id = :'empty_session_id'::UUID;
+ count 
+-------
+     0
+(1 row)
+
+\set VERBOSITY terse
+SELECT rbac.create_session
+(
+    :'user_id'::UUID,
+    (SELECT ARRAY_AGG(id) FROM rbac.roles WHERE name IN ('cashier','manager'))
+); -- error since user is not assigned the manager role
+ERROR:  insert or update on table "session_roles" violates foreign key constraint "session_roles_user_id_role_id_fkey"
+SELECT rbac.create_session
+(
+    '59260dc3-de4a-41d3-b9c2-5c999557621f'::UUID,
+    ARRAY[]::UUID[]
+); -- error since user_id is invalid
+ERROR:  insert or update on table "sessions" violates foreign key constraint "sessions_user_id_fkey"

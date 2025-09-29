@@ -1,0 +1,6 @@
+CREATE OR REPLACE FUNCTION rbac.add_role(role_name TEXT)
+RETURNS UUID
+SECURITY DEFINER
+BEGIN ATOMIC
+    INSERT INTO rbac.roles (name) VALUES (role_name) RETURNING rbac.roles.id;
+END;

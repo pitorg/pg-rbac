@@ -1,0 +1,17 @@
+SELECT rbac.add_role('admin') AS role_id \gset
+SELECT rbac.add_role('admin'); -- error since already added
+ERROR:  duplicate key value violates unique constraint "roles_name_key"
+DETAIL:  Key (name)=(admin) already exists.
+CONTEXT:  SQL function "add_role" statement 1
+SELECT rbac.delete_role(:'role_id'::UUID);
+ delete_role 
+-------------
+ t
+(1 row)
+
+SELECT rbac.delete_role(:'role_id'::UUID); -- NULL, already deleted
+ delete_role 
+-------------
+ 
+(1 row)
+

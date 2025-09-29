@@ -1,0 +1,293 @@
+\set VERBOSITY terse
+SELECT id AS create_sale_object_id FROM rbac.objects WHERE name = 'create_sale' \gset
+SELECT id AS give_discount_object_id FROM rbac.objects WHERE name = 'give_discount' \gset
+SELECT id AS userless_object_id FROM rbac.objects WHERE name = 'userless' \gset
+SELECT id AS execute_operation_id FROM rbac.operations WHERE name = 'execute' \gset
+SELECT '67dc8571-eed5-40b8-b3d6-666b82dee77b'::UUID AS user_id \gset
+SELECT rbac.add_user(:'user_id'::UUID);
+ add_user 
+----------
+ t
+(1 row)
+
+SELECT rbac.add_role('role_1') AS role_id_1 \gset
+SELECT rbac.add_role('role_2') AS role_id_2 \gset
+SELECT rbac.add_role('role_3') AS role_id_3 \gset
+SELECT rbac.add_role('role_4') AS role_id_4 \gset
+SELECT rbac.assign_user(:'user_id'::UUID, :'role_id_1'::UUID);
+ assign_user 
+-------------
+ t
+(1 row)
+
+SELECT rbac.assign_user(:'user_id'::UUID, :'role_id_4'::UUID);
+ assign_user 
+-------------
+ t
+(1 row)
+
+SELECT role_name FROM rbac.assigned_roles(:'user_id'::UUID) ORDER BY role_name;
+ role_name 
+-----------
+ role_1
+ role_4
+(2 rows)
+
+SELECT user_id FROM rbac.assigned_users(:'role_id_1'::UUID);
+               user_id                
+--------------------------------------
+ 67dc8571-eed5-40b8-b3d6-666b82dee77b
+(1 row)
+
+SELECT user_id FROM rbac.assigned_users(:'role_id_2'::UUID);
+ user_id 
+---------
+(0 rows)
+
+SELECT rbac.create_session
+(
+    :'user_id'::UUID,
+    ARRAY[:'role_id_1'::UUID, :'role_id_4'::UUID]
+) AS session_id \gset
+SELECT operation_name, object_name FROM rbac.session_permissions(:'session_id'::UUID); -- none yet
+ operation_name | object_name 
+----------------+-------------
+(0 rows)
+
+SELECT role_name FROM rbac.session_roles(:'session_id'::UUID) ORDER BY role_name; -- role_1, role_4
+ role_name 
+-----------
+ role_1
+ role_4
+(2 rows)
+
+SELECT rbac.grant_permission(:'execute_operation_id'::UUID, :'create_sale_object_id'::UUID, :'role_id_2'::UUID);
+ grant_permission 
+------------------
+ t
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'create_sale_object_id'::UUID); -- false
+ check_access 
+--------------
+ f
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'give_discount_object_id'::UUID); -- false
+ check_access 
+--------------
+ f
+(1 row)
+
+SELECT rbac.grant_permission(:'execute_operation_id'::UUID, :'create_sale_object_id'::UUID, :'role_id_3'::UUID);
+ grant_permission 
+------------------
+ t
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'create_sale_object_id'::UUID); -- false
+ check_access 
+--------------
+ f
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'give_discount_object_id'::UUID); -- false
+ check_access 
+--------------
+ f
+(1 row)
+
+SELECT rbac.add_active_role(:'user_id'::UUID, :'session_id'::UUID, :'role_id_3');
+ERROR:  insert or update on table "session_roles" violates foreign key constraint "session_roles_user_id_role_id_fkey"
+SELECT rbac.assign_user(:'user_id'::UUID, :'role_id_3'::UUID);
+ assign_user 
+-------------
+ t
+(1 row)
+
+SELECT rbac.add_active_role(:'user_id'::UUID, :'session_id'::UUID, :'role_id_3');
+ add_active_role 
+-----------------
+ t
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'create_sale_object_id'::UUID); -- true
+ check_access 
+--------------
+ t
+(1 row)
+
+SELECT rbac.drop_active_role(:'user_id'::UUID, :'session_id'::UUID, :'role_id_3');
+ drop_active_role 
+------------------
+ t
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'create_sale_object_id'::UUID); -- false
+ check_access 
+--------------
+ f
+(1 row)
+
+SELECT rbac.grant_permission(:'execute_operation_id'::UUID, :'create_sale_object_id'::UUID, :'role_id_1'::UUID);
+ grant_permission 
+------------------
+ t
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'create_sale_object_id'::UUID); -- true
+ check_access 
+--------------
+ t
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'give_discount_object_id'::UUID); -- false
+ check_access 
+--------------
+ f
+(1 row)
+
+SELECT rbac.grant_permission(:'execute_operation_id'::UUID, :'give_discount_object_id'::UUID, :'role_id_4'::UUID);
+ grant_permission 
+------------------
+ t
+(1 row)
+
+SELECT rbac.check_access(:'session_id'::UUID, :'execute_operation_id'::UUID, :'give_discount_object_id'::UUID); -- true
+ check_access 
+--------------
+ t
+(1 row)
+
+SELECT operation_name, object_name FROM rbac.role_permissions(:'role_id_4');
+ operation_name |  object_name  
+----------------+---------------
+ execute        | give_discount
+(1 row)
+
+SELECT operation_name, object_name FROM rbac.session_permissions(:'session_id'::UUID) ORDER BY operation_name, object_name;
+ operation_name |  object_name  
+----------------+---------------
+ execute        | create_sale
+ execute        | give_discount
+(2 rows)
+
+SELECT rbac.drop_active_role(:'user_id'::UUID, :'session_id'::UUID, :'role_id_4');
+ drop_active_role 
+------------------
+ t
+(1 row)
+
+SELECT operation_name, object_name FROM rbac.session_permissions(:'session_id'::UUID) ORDER BY operation_name, object_name;
+ operation_name | object_name 
+----------------+-------------
+ execute        | create_sale
+(1 row)
+
+SELECT operation_name, object_name FROM rbac.user_permissions(:'user_id'::UUID) ORDER BY operation_name, object_name;
+ operation_name |  object_name  
+----------------+---------------
+ execute        | create_sale
+ execute        | give_discount
+(2 rows)
+
+SELECT operation_name FROM rbac.role_operations_on_object(:'role_id_4'::UUID, :'give_discount_object_id'::UUID);
+ operation_name 
+----------------
+ execute
+(1 row)
+
+SELECT operation_name FROM rbac.role_operations_on_object(:'role_id_3'::UUID, :'give_discount_object_id'::UUID);
+ operation_name 
+----------------
+(0 rows)
+
+SELECT operation_name FROM rbac.user_operations_on_object(:'user_id'::UUID, :'give_discount_object_id'::UUID);
+ operation_name 
+----------------
+ execute
+(1 row)
+
+SELECT operation_name FROM rbac.user_operations_on_object(:'user_id'::UUID, :'userless_object_id'::UUID);
+ operation_name 
+----------------
+(0 rows)
+
+SELECT rbac.revoke_permission(:'execute_operation_id'::UUID, :'create_sale_object_id'::UUID, :'role_id_1'::UUID);
+ revoke_permission 
+-------------------
+ t
+(1 row)
+
+SELECT rbac.revoke_permission(:'execute_operation_id'::UUID, :'create_sale_object_id'::UUID, :'role_id_2'::UUID);
+ revoke_permission 
+-------------------
+ t
+(1 row)
+
+SELECT rbac.revoke_permission(:'execute_operation_id'::UUID, :'create_sale_object_id'::UUID, :'role_id_3'::UUID);
+ revoke_permission 
+-------------------
+ t
+(1 row)
+
+SELECT rbac.revoke_permission(:'execute_operation_id'::UUID, :'give_discount_object_id'::UUID, :'role_id_4'::UUID);
+ revoke_permission 
+-------------------
+ t
+(1 row)
+
+SELECT rbac.deassign_user(:'user_id'::UUID, :'role_id_1'::UUID);
+ deassign_user 
+---------------
+ t
+(1 row)
+
+SELECT rbac.deassign_user(:'user_id'::UUID, :'role_id_3'::UUID);
+ deassign_user 
+---------------
+ t
+(1 row)
+
+SELECT rbac.deassign_user(:'user_id'::UUID, :'role_id_4'::UUID);
+ deassign_user 
+---------------
+ t
+(1 row)
+
+SELECT rbac.delete_session(:'user_id'::UUID, :'session_id'::UUID);
+ delete_session 
+----------------
+ t
+(1 row)
+
+SELECT rbac.delete_user(:'user_id'::UUID);
+ delete_user 
+-------------
+ t
+(1 row)
+
+SELECT rbac.delete_role(:'role_id_1'::UUID);
+ delete_role 
+-------------
+ t
+(1 row)
+
+SELECT rbac.delete_role(:'role_id_2'::UUID);
+ delete_role 
+-------------
+ t
+(1 row)
+
+SELECT rbac.delete_role(:'role_id_3'::UUID);
+ delete_role 
+-------------
+ t
+(1 row)
+
+SELECT rbac.delete_role(:'role_id_4'::UUID);
+ delete_role 
+-------------
+ t
+(1 row)
+

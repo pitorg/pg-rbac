@@ -1,0 +1,5 @@
+comment = 'core rbac implementation'
+default_version = '1.0'
+superuser = false
+relocatable = false
+schema = 'rbac'
