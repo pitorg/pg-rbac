@@ -5,6 +5,8 @@
 --   - Single column FKs: green edges
 --   - Composite FKs: unique colors per constraint to show which edges belong together
 
+CREATE EXTENSION IF NOT EXISTS rbac;
+
 \t
 \a
 \o schema_diagram.dot

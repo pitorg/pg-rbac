@@ -95,8 +95,6 @@ digraph DatabaseSchema {
     "rbac.assigned_permissions.role_id" -> "rbac.roles.id" [label="assigned_permissions_role_id_fkey"];
     "rbac.assigned_users.role_id" -> "rbac.roles.id" [label="assigned_users_role_id_fkey"];
     "rbac.assigned_users.user_id" -> "rbac.users.id" [label="assigned_users_user_id_fkey"];
-    "rbac.session_roles.role_id" -> "rbac.roles.id" [label="session_roles_role_id_fkey"];
-    "rbac.session_roles.session_id" -> "rbac.sessions.id" [label="session_roles_session_id_fkey"];
     // Composite FK: session_roles_session_id_user_id_fkey (session_id,user_id -> id,user_id, color: blue)
     "rbac.session_roles.session_id" -> "rbac.sessions.id" [color="blue", label="session_roles_session_id_user_id_fkey"];
     "rbac.session_roles.user_id" -> "rbac.sessions.user_id" [color="blue", label=""];
